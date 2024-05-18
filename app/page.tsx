@@ -1,6 +1,7 @@
 "use client";
 import { FilterInputComponent } from "@/components/FilterInputComponent/FilterInputComponent";
 import { HasString } from "@/components/FilterInputComponent/FilterToken";
+import { useExampleData } from "@/lib/Data/useExampleData";
 import { Filter, FilterOperator, FilterValueType } from "@/lib/Models/Filter";
 import { useCallback, useEffect, useState } from "react";
 
@@ -30,10 +31,12 @@ function Home() {
     },
   ]);
 
+  const dataSource = useExampleData();
+
   return (
     <main className="h-full">
       <div className="p-4">
-        <FilterInputComponent filters={filters} />
+        <FilterInputComponent dataSource={dataSource} filters={filters} />
       </div>
     </main>
   );

@@ -7,5 +7,7 @@ import {
 export interface DataSource {
   availableProperties: () => FilterProperty[];
   operatorsForProperty: (property: FilterProperty) => FilterOperator[];
-  valuesForProperty: <T>(property: FilterProperty) => FilterValue<T>;
+  valuesForProperty: <T>(
+    property: FilterProperty
+  ) => Array<FilterValue<T>> | undefined;
 }

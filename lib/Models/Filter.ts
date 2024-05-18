@@ -19,10 +19,10 @@ export enum FilterValueType {
 }
 
 export enum FilterOperator {
-  equal,
-  notEqual,
-  greaterThan,
-  lessThan,
+  equal = "=",
+  notEqual = "!=",
+  greaterThan = ">",
+  lessThan = "<",
 }
 
 export type FilterProperty = {
