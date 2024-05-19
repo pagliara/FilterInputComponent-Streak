@@ -15,7 +15,6 @@ export type FilterValue<T> = {
 export enum FilterValueType {
   integer,
   string,
-  option,
 }
 
 export enum FilterOperator {
@@ -25,7 +24,13 @@ export enum FilterOperator {
   lessThan = "<",
 }
 
+export enum FilterPropertyAllowedValues {
+  integer,
+  string,
+  option,
+}
+
 export type FilterProperty = {
   name: string;
-  allowedValues: FilterValueType[];
+  allowedValues: FilterPropertyAllowedValues[];
 };

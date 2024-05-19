@@ -6,37 +6,25 @@ import { Filter, FilterOperator, FilterValueType } from "@/lib/Models/Filter";
 import { useCallback, useEffect, useState } from "react";
 
 function Home() {
-  const [filters, setFilters] = useState<Array<Filter<HasString>>>([
-    {
-      property: {
-        name: "Category",
-        allowedValues: [FilterValueType.option],
-      },
-      operator: FilterOperator.equal,
-      value: {
-        value: "Toys",
-        type: FilterValueType.option,
-      },
-    },
-    {
-      property: {
-        name: "Status",
-        allowedValues: [FilterValueType.option],
-      },
-      operator: FilterOperator.lessThan,
-      value: {
-        value: "8",
-        type: FilterValueType.integer,
-      },
-    },
-  ]);
+  const [filters, setFilters] = useState<Array<Filter<HasString>>>([]);
 
   const dataSource = useExampleData();
 
   return (
     <main className="h-full">
       <div className="p-4">
-        <FilterInputComponent dataSource={dataSource} filters={filters} />
+        <FilterInputComponent
+          dataSource={dataSource}
+          filters={filters}
+          onDeleteFilter={(filter) => {
+            console.log(filter);
+          }}
+          onAddFilter={(filter: Filter<HasString>) => {
+            if (!filters.find((f) => f.property == filter.property)) {
+              setFilters([...filters, filter]);
+            }
+          }}
+        />
       </div>
     </main>
   );

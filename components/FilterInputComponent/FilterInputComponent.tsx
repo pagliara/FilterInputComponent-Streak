@@ -9,6 +9,7 @@ import {
   Filter,
   FilterOperator,
   FilterProperty,
+  FilterPropertyAllowedValues,
   FilterValue,
   FilterValueType,
 } from "@/lib/Models/Filter";
@@ -19,6 +20,7 @@ import {
   PropsWithChildren,
   useMemo,
   useState,
+  useEffect,
 } from "react";
 import { ImmerReducer, useImmerReducer } from "use-immer";
 
@@ -31,7 +33,8 @@ enum FilterInputMode {
 interface FilterInputComponentProps<T> {
   filters: Filter<T>[];
   dataSource: DataSource;
-  onSelectProperty: (property: FilterProperty) => void;
+  onAddFilter: (filter: Filter<T>) => void;
+  onDeleteFilter: (filter: Filter<T>) => void;
 }
 
 const FilterInputToken: React.FC<PropsWithChildren> = ({ children }) => (
@@ -39,7 +42,7 @@ const FilterInputToken: React.FC<PropsWithChildren> = ({ children }) => (
 );
 
 const FilterInputField: React.FC<{
-  state: State;
+  state: State<HasString>;
   dispatch: Dispatch<Action>;
 }> = ({ state, dispatch }) => {
   const {
@@ -59,7 +62,7 @@ const FilterInputField: React.FC<{
   const filteredProperties = useMemo(() => {
     return dataSource
       .availableProperties()
-      .filter((p) =>
+      .filter((p: FilterProperty) =>
         inputText?.length ?? 0 > 0
           ? inputText
             ? p.name.startsWith(inputText)
@@ -68,14 +71,56 @@ const FilterInputField: React.FC<{
       );
   }, [dataSource, inputText]);
 
+  const filteredOperators = useMemo(() => {
+    if (!selectedProperty) return;
+    return dataSource
+      .operatorsForProperty(selectedProperty)
+      .filter((o: HasString) => o.toString().includes(inputText));
+  }, [dataSource, inputText, selectedProperty]);
+
+  const filteredValues = useMemo(() => {
+    if (!selectedProperty) return;
+    return (
+      dataSource.valuesForProperty<HasString>(selectedProperty) ?? []
+    ).filter((v: FilterValue<HasString>) =>
+      v.value.toString().includes(inputText)
+    );
+  }, [dataSource, inputText, selectedProperty]);
+
   function handleEnterKey() {
     switch (inputMode) {
       case FilterInputMode.property:
         if (filteredProperties.length == 0) return;
-        switch (inputMode) {
-          case FilterInputMode.property:
-            const firstProperty = filteredProperties[0];
-            dispatch({ type: Actions.SelectProperty, payload: firstProperty });
+        // TODO: support for using the selected item from the autocomplete dropdown
+        const firstProperty = filteredProperties[0];
+        dispatch({ type: Actions.SelectProperty, payload: firstProperty });
+        break;
+      case FilterInputMode.operator:
+        if (!filteredOperators || filteredOperators.length == 0) return;
+        const firstOperator = filteredOperators[0];
+        dispatch({ type: Actions.SelectOperator, payload: firstOperator });
+        break;
+      case FilterInputMode.value:
+        if (
+          selectedProperty?.allowedValues.includes(
+            FilterPropertyAllowedValues.string
+          )
+        ) {
+          dispatch({
+            type: Actions.SelectValue,
+            payload: {
+              value: inputText,
+              type: FilterValueType.string,
+            },
+          });
+        } else {
+          // use the selected option
+          if (!filteredValues || filteredValues.length == 0) return;
+          const selectedValue = filteredValues[0];
+          dispatch({
+            type: Actions.SelectValue,
+            payload: selectedValue,
+          });
         }
         break;
       default:
@@ -91,6 +136,12 @@ const FilterInputField: React.FC<{
           dispatch({ type: Actions.SelectProperty, payload: undefined });
         }
         break;
+      case FilterInputMode.value:
+        if (inputText == "") {
+          e.preventDefault();
+          dispatch({ type: Actions.SelectOperator, payload: undefined });
+        }
+        break;
       default:
         break;
     }
@@ -98,16 +149,8 @@ const FilterInputField: React.FC<{
 
   const autocompleteItemsForMode = {
     [FilterInputMode.property]: filteredProperties.map((p) => p.name),
-    [FilterInputMode.operator]:
-      selectedProperty &&
-      dataSource
-        .operatorsForProperty(selectedProperty)
-        .map((o) => o.toString()),
-    [FilterInputMode.value]:
-      selectedProperty &&
-      dataSource
-        .valuesForProperty<HasString>(selectedProperty)
-        ?.map((v) => v.value.toString()),
+    [FilterInputMode.operator]: filteredOperators,
+    [FilterInputMode.value]: filteredValues?.map((v) => v.value.toString()),
   };
 
   const handleKeyDown: KeyboardEventHandler<HTMLInputElement> = (e) => {
@@ -132,8 +175,8 @@ const FilterInputField: React.FC<{
         <FilterInputToken>{selectedOperator}</FilterInputToken>
       ) : undefined}
       <AutocompleteField
-        onBlur={(e) => dispatch({ type: Actions.OnBlur, payload: e })}
-        onFocus={(e) => dispatch({ type: Actions.OnFocus, payload: e })}
+        //onBlur={(e) => dispatch({ type: Actions.OnBlur, payload: e })}
+        //onFocus={(e) => dispatch({ type: Actions.OnFocus, payload: e })}
         items={autocompleteItemsForMode[inputMode] ?? []}
         placeholder={placeholderForMode[inputMode]}
         className="text-xl"
@@ -152,26 +195,23 @@ const FilterInputField: React.FC<{
 // The current text of the input field
 // The current filter being edited/inputted
 // The selection state of any current filter tokens
-interface State {
+interface State<T> {
   inputText: string;
   inputMode: FilterInputMode;
   selectedProperty?: FilterProperty;
   selectedOperator?: FilterOperator;
-  selectedValue?: FilterValue<HasString>;
+  selectedValue?: FilterValue<T>;
   selectedToken?: number;
   dataSource: DataSource;
 }
 
 enum Actions {
   UpdateInputText,
-  OnDeleteKey,
-  OnEnterKey,
-  OnBlur,
-  OnFocus,
   SelectProperty,
   SelectOperator,
   SelectValue,
-  SelectedToken,
+  SelectToken,
+  AddedToken,
 }
 
 interface UpdateInputTextAction {
@@ -179,32 +219,31 @@ interface UpdateInputTextAction {
   payload: string;
 }
 
-interface OnBlurAction {
-  type: Actions.OnBlur;
-  payload?: any;
-}
-
-interface OnFocusAction {
-  type: Actions.OnFocus;
-  payload?: any;
-}
-
-interface OnEnterKeyAction {
-  type: Actions.OnEnterKey;
-  payload?: any;
-}
-
 interface SelectPropertyAction {
   type: Actions.SelectProperty;
   payload?: FilterProperty;
 }
 
+interface SelectOperatorAction {
+  type: Actions.SelectOperator;
+  payload?: FilterOperator;
+}
+
+interface SelectValueAction {
+  type: Actions.SelectValue;
+  payload: FilterValue<any>;
+}
+
+interface AddedTokenAction {
+  type: Actions.AddedToken;
+}
+
 type Action =
   | UpdateInputTextAction
-  | OnBlurAction
-  | OnFocusAction
-  | OnEnterKeyAction
-  | SelectPropertyAction;
+  | SelectPropertyAction
+  | SelectOperatorAction
+  | SelectValueAction
+  | AddedTokenAction;
 
 function isNumeric(str: string) {
   return !isNaN(Number(str));
@@ -214,12 +253,14 @@ function allowUpdateValueForProperty(
   updatedText: string,
   property: FilterProperty
 ): boolean {
-  if (property.allowedValues.includes(FilterValueType.string)) {
+  if (property.allowedValues.includes(FilterPropertyAllowedValues.string)) {
     return true;
-  } else if (property.allowedValues.includes(FilterValueType.integer)) {
+  } else if (
+    property.allowedValues.includes(FilterPropertyAllowedValues.integer)
+  ) {
     return isNumeric(updatedText);
   }
-  return false;
+  return true;
 }
 
 function allowUpdateOperatorForProperty(
@@ -228,12 +269,17 @@ function allowUpdateOperatorForProperty(
   dataSource: DataSource
 ): boolean {
   if (updatedText == "") return true;
-  return dataSource
-    .operatorsForProperty(property)
-    .includes(updatedText as FilterOperator);
+  return Boolean(
+    dataSource
+      .operatorsForProperty(property)
+      .find((o) => o.toString().includes(updatedText))
+  );
 }
 
-function handleUpdateInputText(draft: State, action: Action) {
+function handleUpdateInputText(
+  draft: State<HasString>,
+  action: UpdateInputTextAction
+) {
   switch (draft.inputMode) {
     case FilterInputMode.property:
       draft.inputText = action.payload;
@@ -262,7 +308,7 @@ function handleUpdateInputText(draft: State, action: Action) {
   }
 }
 
-const reducer: ImmerReducer<State, Action> = (draft, action) => {
+const reducer: ImmerReducer<State<HasString>, Action> = (draft, action) => {
   switch (action.type) {
     case Actions.UpdateInputText:
       handleUpdateInputText(draft, action);
@@ -277,7 +323,29 @@ const reducer: ImmerReducer<State, Action> = (draft, action) => {
         draft.selectedProperty = undefined;
         draft.inputMode = FilterInputMode.property;
       }
-
+      break;
+    case Actions.SelectOperator:
+      if (action.payload) {
+        draft.selectedOperator = action.payload;
+        draft.inputMode = FilterInputMode.value;
+        draft.inputText = "";
+      } else {
+        draft.inputText = draft.selectedOperator ?? "";
+        draft.selectedOperator = undefined;
+        draft.inputMode = FilterInputMode.operator;
+      }
+      break;
+    case Actions.SelectValue:
+      if (!draft.selectedProperty || !draft.selectedOperator) return;
+      draft.selectedValue = action.payload;
+      break;
+    case Actions.AddedToken:
+      draft.inputMode = FilterInputMode.property;
+      draft.inputText = "";
+      draft.selectedProperty = undefined;
+      draft.selectedOperator = undefined;
+      draft.selectedValue = undefined;
+      break;
     default:
       break;
   }
@@ -285,14 +353,24 @@ const reducer: ImmerReducer<State, Action> = (draft, action) => {
 
 export const FilterInputComponent: React.FC<
   FilterInputComponentProps<HasString>
-> = ({ filters, dataSource, onSelectProperty }) => {
-  const [state, dispatch] = useImmerReducer<State, Action>(reducer, {
+> = ({ filters, dataSource, onAddFilter, onDeleteFilter }) => {
+  const [state, dispatch] = useImmerReducer<State<HasString>, Action>(reducer, {
     inputText: "",
     inputMode: FilterInputMode.property,
     dataSource, // TODO: need to update dataSource if updated
   });
 
-  const { inputText, inputMode } = state;
+  useEffect(() => {
+    const { selectedOperator, selectedProperty, selectedValue } = state;
+    if (selectedProperty && selectedOperator && selectedValue) {
+      onAddFilter({
+        property: selectedProperty,
+        operator: selectedOperator,
+        value: selectedValue,
+      });
+      dispatch({ type: Actions.AddedToken });
+    }
+  }, [dispatch, onAddFilter, state]);
 
   /*
 
