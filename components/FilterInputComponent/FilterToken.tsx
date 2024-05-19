@@ -1,9 +1,11 @@
 import { Filter, FilterOperator } from "@/lib/Models/Filter";
 import { cn } from "@/lib/utils";
+import { useEffect, useRef } from "react";
 
 interface FilterTokenProps<T> {
   filter: Filter<T>;
   isSelected?: boolean;
+  onDelete: () => void;
 }
 
 export interface HasString {
@@ -20,9 +22,23 @@ const operatorToString: Record<FilterOperator, string> = {
 export const FilterToken: React.FC<FilterTokenProps<HasString>> = ({
   filter,
   isSelected = false,
+  onDelete,
 }) => {
+  const ref = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (isSelected) {
+      ref.current?.focus();
+    }
+  }, [isSelected]);
   return (
     <div
+      tabIndex={0}
+      ref={ref}
+      onKeyDown={(e) => {
+        if (e.key == "Delete" || e.key == "Backspace") {
+          onDelete();
+        }
+      }}
       className={cn(
         "flex flex-row items-center",
         "p-1 px-3",

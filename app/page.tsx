@@ -17,7 +17,7 @@ function Home() {
           dataSource={dataSource}
           filters={filters}
           onDeleteFilter={(filter) => {
-            console.log(filter);
+            setFilters(filters.filter((f) => f != filter));
           }}
           onAddFilter={(filter: Filter<HasString>) => {
             if (!filters.find((f) => f.property == filter.property)) {

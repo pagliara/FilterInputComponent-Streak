@@ -21,6 +21,7 @@ import {
   useMemo,
   useState,
   useEffect,
+  useRef,
 } from "react";
 import { ImmerReducer, useImmerReducer } from "use-immer";
 
@@ -42,13 +43,13 @@ const FilterInputToken: React.FC<PropsWithChildren> = ({ children }) => (
 );
 
 const FilterInputField: React.FC<{
+  filters: Filter<HasString>[];
   state: State<HasString>;
   dispatch: Dispatch<Action>;
-}> = ({ state, dispatch }) => {
+}> = ({ state, dispatch, filters }) => {
   const {
     selectedProperty,
     selectedOperator,
-    selectedValue,
     inputMode,
     inputText,
     dataSource,
@@ -130,6 +131,16 @@ const FilterInputField: React.FC<{
 
   function handleDeleteKey(e: KeyboardEvent) {
     switch (inputMode) {
+      case FilterInputMode.property:
+        if (inputText == "") {
+          if (filters.length > 0) {
+            (e.target as HTMLInputElement).blur();
+            dispatch({
+              type: Actions.SelectToken,
+              payload: filters[filters.length - 1],
+            });
+          }
+        }
       case FilterInputMode.operator:
         if (inputText == "") {
           e.preventDefault();
@@ -176,7 +187,9 @@ const FilterInputField: React.FC<{
       ) : undefined}
       <AutocompleteField
         //onBlur={(e) => dispatch({ type: Actions.OnBlur, payload: e })}
-        //onFocus={(e) => dispatch({ type: Actions.OnFocus, payload: e })}
+        onFocus={(e) =>
+          dispatch({ type: Actions.SelectToken, payload: undefined })
+        }
         items={autocompleteItemsForMode[inputMode] ?? []}
         placeholder={placeholderForMode[inputMode]}
         className="text-xl"
@@ -201,7 +214,7 @@ interface State<T> {
   selectedProperty?: FilterProperty;
   selectedOperator?: FilterOperator;
   selectedValue?: FilterValue<T>;
-  selectedToken?: number;
+  selectedToken?: Filter<T>;
   dataSource: DataSource;
 }
 
@@ -238,12 +251,18 @@ interface AddedTokenAction {
   type: Actions.AddedToken;
 }
 
+interface SelectTokenAction<T> {
+  type: Actions.SelectToken;
+  payload?: Filter<T>;
+}
+
 type Action =
   | UpdateInputTextAction
   | SelectPropertyAction
   | SelectOperatorAction
   | SelectValueAction
-  | AddedTokenAction;
+  | AddedTokenAction
+  | SelectTokenAction<HasString>;
 
 function isNumeric(str: string) {
   return !isNaN(Number(str));
@@ -346,6 +365,9 @@ const reducer: ImmerReducer<State<HasString>, Action> = (draft, action) => {
       draft.selectedOperator = undefined;
       draft.selectedValue = undefined;
       break;
+    case Actions.SelectToken:
+      draft.selectedToken = action.payload;
+      break;
     default:
       break;
   }
@@ -372,23 +394,16 @@ export const FilterInputComponent: React.FC<
     }
   }, [dispatch, onAddFilter, state]);
 
-  /*
-
-  const handleBlur = () => {
-    setInputMode(FilterInputMode.property);
-    setInputText("");
-    setSelectedProperty(undefined);
-    setSelectedOperator(undefined);
-    setSelectedValue(undefined);
-  };
-  */
-
-  const handleFocus = () => {};
-
   return (
     <div className="flex flex-row items-center p-3 gap-2 border rounded-md shadow-md bg-white transition-all">
-      <FilterTokens filters={filters} />
-      <FilterInputField state={state} dispatch={dispatch} />
+      <FilterTokens
+        filters={filters}
+        selectedToken={state.selectedToken}
+        onDeleteToken={(filter) => {
+          onDeleteFilter(filter);
+        }}
+      />
+      <FilterInputField state={state} dispatch={dispatch} filters={filters} />
     </div>
   );
 };
