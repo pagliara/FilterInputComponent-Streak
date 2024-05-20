@@ -81,6 +81,7 @@ export const FilterInputField = forwardRef(
     }
 
     function handleSelectDropdownItem(index: number) {
+      setSelectedAutocompleteItem(0);
       switch (inputMode) {
         case FilterInputMode.property:
           if (filteredProperties.length == 0) return;
@@ -114,7 +115,10 @@ export const FilterInputField = forwardRef(
             dispatch({
               type: Actions.SelectValue,
               payload: {
-                value: Number(inputText),
+                value:
+                  inputText == ""
+                    ? filteredValues?.at(selectedAutocompleteItem)?.value ?? 0
+                    : parseInt(inputText),
                 type: FilterValueType.integer,
               },
             });
