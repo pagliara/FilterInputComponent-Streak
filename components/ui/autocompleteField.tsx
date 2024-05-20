@@ -1,48 +1,21 @@
 import { Input, InputProps } from "@/components/ui/atoms/input";
-import { cn } from "@/lib/utils";
+import { Dropdown, DropdownProps } from "@/components/ui/dropdown";
 import { PropsWithChildren, useState } from "react";
 
-interface AutocompleteFieldProps extends InputProps {
-  items: Array<string>;
-  selectedItem: number;
-}
-
-const AutocompleteDropDown: React.FC<{ items: Array<string> }> = ({
-  items,
-}) => {
-  return (
-    <div
-      className={cn(
-        "absolute top-[70px]",
-        "bg-white rounded-md shadow-lg",
-        "p-2 w-full h-min max-h-80 overflow-scroll",
-        "animate-in slide-in-from-top-[70px]"
-      )}
-    >
-      {items.length > 0 ? (
-        items.map((item, index) => {
-          return <AutocompleteItem key={index}>{item}</AutocompleteItem>;
-        })
-      ) : (
-        <AutocompleteItem>
-          <p className="w-full">No results.</p>
-        </AutocompleteItem>
-      )}
-    </div>
-  );
-};
+type AutocompleteFieldProps = InputProps & DropdownProps;
 
 export const AutocompleteField: React.FC<AutocompleteFieldProps> = ({
   items,
   selectedItem,
   value,
   onChange,
+  onClickItem,
   ...rest
 }) => {
   const [isFocused, setIsFocused] = useState(false);
 
   return (
-    <div className="relative flex items-center">
+    <div className="relative flex items-center w-full">
       <Input
         value={value}
         onChange={onChange}
@@ -56,22 +29,13 @@ export const AutocompleteField: React.FC<AutocompleteFieldProps> = ({
           setIsFocused(false);
         }}
       />
-      {isFocused ? <AutocompleteDropDown items={items} /> : undefined}
-    </div>
-  );
-};
-
-const AutocompleteItem: React.FC<PropsWithChildren<{ selected?: boolean }>> = ({
-  children,
-  selected,
-}) => {
-  return (
-    <div
-      className={cn("rounded p-2 hover:bg-blue-100 font-medium text-lg", {
-        "bg-blue-100": selected,
-      })}
-    >
-      {children}
+      {isFocused ? (
+        <Dropdown
+          items={items}
+          selectedItem={selectedItem}
+          onClickItem={onClickItem}
+        />
+      ) : undefined}
     </div>
   );
 };
