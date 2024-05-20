@@ -47,6 +47,7 @@ export const FilterToken: React.FC<FilterTokenProps<HasString>> = ({
         "hover:border-gray-400 hover:bg-gray-300",
         {
           " bg-blue-200 border-blue-400": isSelected,
+          "hover:border-blue-400 hover:bg-blue-300": isSelected,
         }
       )}
     >

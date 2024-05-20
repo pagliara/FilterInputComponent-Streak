@@ -2,12 +2,14 @@ import { cn } from "@/lib/utils";
 import { PropsWithChildren } from "react";
 
 export interface DropdownProps {
+  open: boolean;
   items: Array<string>;
   selectedItem?: number;
   onClickItem: (index: number) => void;
 }
 
 export const Dropdown: React.FC<DropdownProps> = ({
+  open,
   selectedItem,
   onClickItem,
   items,
@@ -15,10 +17,13 @@ export const Dropdown: React.FC<DropdownProps> = ({
   return (
     <div
       className={cn(
-        "absolute top-[70px]",
+        "absolute top-[50px]",
         "bg-white rounded-md shadow-lg",
         "p-2 w-full h-min max-h-80 overflow-scroll",
-        "animate-in slide-in-from-top-[70px]"
+        "animate-in slide-in-from-top-[70px]",
+        {
+          hidden: !open,
+        }
       )}
     >
       {items.length > 0 ? (
@@ -27,7 +32,6 @@ export const Dropdown: React.FC<DropdownProps> = ({
             <div
               key={index}
               onClick={(e) => {
-                e.preventDefault();
                 onClickItem(index);
               }}
             >
@@ -38,7 +42,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
           );
         })
       ) : (
-        <DropdownItem>
+        <DropdownItem selectable={false}>
           <p className="w-full">No results.</p>
         </DropdownItem>
       )}
@@ -46,14 +50,24 @@ export const Dropdown: React.FC<DropdownProps> = ({
   );
 };
 
-const DropdownItem: React.FC<PropsWithChildren<{ selected?: boolean }>> = ({
+interface DropdownItemProps {
+  selected?: boolean;
+  selectable?: boolean;
+}
+
+const DropdownItem: React.FC<PropsWithChildren<DropdownItemProps>> = ({
   children,
   selected,
+  selectable = true,
 }) => {
   return (
     <div
-      className={cn("rounded p-2 hover:bg-blue-100 font-medium text-lg", {
-        "bg-blue-100": selected,
+      // this is so focus is not removed from the parent component
+      onMouseDown={(e) => e.preventDefault()}
+      className={cn("rounded p-1", "font-medium text-lg", {
+        "bg-blue-100 outline-blue-200 outline": selected,
+        "hover:bg-blue-100 hover:outline-blue-200 hover:outline cursor-pointer":
+          selectable,
       })}
     >
       {children}

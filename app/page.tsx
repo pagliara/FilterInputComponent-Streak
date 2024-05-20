@@ -12,7 +12,7 @@ function Home() {
 
   return (
     <main className="h-full">
-      <div className="p-4">
+      <div className="p-4 flex flex-col">
         <FilterInputComponent
           dataSource={dataSource}
           filters={filters}
@@ -25,6 +25,16 @@ function Home() {
             }
           }}
         />
+        <div className="py-4 absolute bottom-9">
+          Current Filters:{" "}
+          {filters.map((f, i) => (
+            <span key={i} className="p-3">
+              {f.property.name}
+              {f.operator}
+              {f.value.value.toString()}
+            </span>
+          ))}
+        </div>
       </div>
     </main>
   );

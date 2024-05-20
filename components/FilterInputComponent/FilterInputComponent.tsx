@@ -8,7 +8,7 @@ import {
 } from "@/components/FilterInputComponent/useFilterInputState";
 import { DataSource } from "@/lib/Models/DataSource";
 import { Filter } from "@/lib/Models/Filter";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 interface FilterInputComponentProps<T> {
   filters: Filter<T>[];
@@ -26,6 +26,10 @@ export const FilterInputComponent: React.FC<
     dataSource, // TODO: need to update dataSource if updated
   });
 
+  const inputFieldRef = useRef<HTMLInputElement | null>(null);
+
+  // Handles actually calling the onAddFilter function when we have
+  // selected a property, operator, and value
   useEffect(() => {
     const { selectedOperator, selectedProperty, selectedValue } = state;
     if (selectedProperty && selectedOperator && selectedValue) {
@@ -39,15 +43,25 @@ export const FilterInputComponent: React.FC<
   }, [dispatch, onAddFilter, state]);
 
   return (
-    <div className="flex flex-row flex-wrap items-center p-3 gap-2 border rounded-md shadow-md bg-white w-full">
+    <div className="flex flex-row flex-wrap items-center p-1 gap-2 border rounded-md shadow-md bg-white w-full">
       <FilterTokens
         filters={filters}
         selectedToken={state.selectedToken}
         onDeleteToken={(filter) => {
           onDeleteFilter(filter);
+          dispatch({ type: Actions.DeletedToken });
+          inputFieldRef.current?.focus();
+        }}
+        onClickToken={(filter) => {
+          dispatch({ type: Actions.SelectToken, payload: filter });
         }}
       />
-      <FilterInputField state={state} dispatch={dispatch} filters={filters} />
+      <FilterInputField
+        ref={inputFieldRef}
+        state={state}
+        dispatch={dispatch}
+        filters={filters}
+      />
     </div>
   );
 };

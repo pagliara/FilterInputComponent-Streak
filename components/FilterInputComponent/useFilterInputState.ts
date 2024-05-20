@@ -32,6 +32,7 @@ export enum Actions {
   SelectValue,
   SelectToken,
   AddedToken,
+  DeletedToken,
 }
 
 interface UpdateInputTextAction {
@@ -58,6 +59,10 @@ interface AddedTokenAction {
   type: Actions.AddedToken;
 }
 
+interface DeletedTokenAction {
+  type: Actions.DeletedToken;
+}
+
 interface SelectTokenAction<T> {
   type: Actions.SelectToken;
   payload?: Filter<T>;
@@ -69,6 +74,7 @@ export type Action =
   | SelectOperatorAction
   | SelectValueAction
   | AddedTokenAction
+  | DeletedTokenAction
   | SelectTokenAction<HasString>;
 
 function isNumeric(str: string) {
@@ -171,6 +177,9 @@ const reducer: ImmerReducer<State<HasString>, Action> = (draft, action) => {
       draft.selectedProperty = undefined;
       draft.selectedOperator = undefined;
       draft.selectedValue = undefined;
+      break;
+    case Actions.DeletedToken:
+      draft.selectedToken = undefined;
       break;
     case Actions.SelectToken:
       draft.selectedToken = action.payload;
