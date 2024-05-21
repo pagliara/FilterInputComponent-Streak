@@ -1,6 +1,7 @@
 import { Filter, FilterOperator } from "@/lib/Models/Filter";
 import { cn } from "@/lib/utils";
 import { useEffect, useRef } from "react";
+import { Cross1Icon } from "@radix-ui/react-icons";
 
 interface FilterTokenProps<T> {
   filter: Filter<T>;
@@ -54,6 +55,11 @@ export const FilterToken: React.FC<FilterTokenProps<HasString>> = ({
       <span>{filter.property.name}</span>
       <span className="text-2xl p-1">{operatorToString[filter.operator]}</span>
       <span className="font-bold pt-0.5">{filter.value.value.toString()}</span>
+      {isSelected ? (
+        <button onClick={() => onDelete()} className="ml-2 p-2">
+          <Cross1Icon />
+        </button>
+      ) : undefined}
     </div>
   );
 };
