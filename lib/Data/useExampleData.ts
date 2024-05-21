@@ -29,7 +29,7 @@ export function useExampleData(): DataSource {
     },
     {
       name: "Location",
-      allowedValues: [FilterPropertyAllowedValues.option],
+      allowedValues: [FilterPropertyAllowedValues.string],
     },
   ];
   const numericOperators = [
