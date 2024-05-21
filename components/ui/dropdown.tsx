@@ -65,9 +65,8 @@ const DropdownItem: React.FC<PropsWithChildren<DropdownItemProps>> = ({
       // this is so focus is not removed from the parent component
       onMouseDown={(e) => e.preventDefault()}
       className={cn("rounded p-1", "font-medium text-lg", {
-        "bg-blue-100 outline-blue-200 outline": selected,
-        "hover:bg-blue-100 hover:outline-blue-200 hover:outline cursor-pointer":
-          selectable,
+        "hover:bg-gray-50 cursor-pointer": selectable,
+        "bg-blue-100 hover:bg-blue-100 outline-blue-200 outline": selected,
       })}
     >
       {children}
